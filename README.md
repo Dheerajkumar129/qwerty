@@ -2,8 +2,8 @@
 
 > A web app for UK energy utility traders to monitor and evaluate national GB wind generation forecasts, supporting day-ahead market procurement decisions.
 
-**Live App:** `https://kjhwr.vercel.app` *(or your assigned Vercel URL)*  
-**API Docs:** `https://kjhwr.vercel.app/api/docs`
+**Live App:** `https://qwerty.vercel.app` *(or your assigned Vercel URL)*  
+**API Docs:** `https://qwerty.vercel.app/api/docs`
 
 > ⚠️ **AI Assistance Disclosure:** This application was built with the assistance of Google Deepmind's Antigravity AI coding assistant. All domain knowledge, architectural decisions, and code have been reviewed and are correct. Prompts covered architecture design, component scaffolding, and API client structure.
 
@@ -97,8 +97,8 @@ windview/
 
 ```bash
 # Clone and start both services
-git clone https://github.com/Dheerajkumar129/kjhwr.git
-cd kjhwr
+git clone https://github.com/Dheerajkumar129/qwerty.git
+cd qwerty
 docker compose up --build
 ```
 
@@ -166,7 +166,7 @@ Elexon BMRS API (public)
 
 The entire full-stack app deploys to Vercel in 1 click:
 
-1. Import your GitHub repository (`https://github.com/Dheerajkumar129/kjhwr`) into Vercel.
+1. Import your GitHub repository (`https://github.com/Dheerajkumar129/qwerty`) into Vercel.
 2. Vercel automatically detects `vercel.json` and configures:
    - Frontend static build from `frontend/`
    - Python serverless functions from `api/index.py` using `requirements.txt`
