@@ -93,8 +93,8 @@ windview/
 
 ```bash
 # Clone and start both services
-git clone https://github.com/your-repo/windview
-cd windview
+git clone https://github.com/Dheerajkumar129/kjhwr.git
+cd kjhwr
 docker compose up --build
 ```
 
