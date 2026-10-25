@@ -2,6 +2,7 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 import logging
 
 from app.routers import actuals, forecasts, analytics
@@ -39,6 +40,11 @@ app.add_middleware(
 app.include_router(actuals.router, prefix="/api/v1")
 app.include_router(forecasts.router, prefix="/api/v1")
 app.include_router(analytics.router, prefix="/api/v1")
+
+
+@app.get("/docs", include_in_schema=False)
+async def docs_redirect():
+    return RedirectResponse(url="/api/docs")
 
 
 @app.get("/api")
