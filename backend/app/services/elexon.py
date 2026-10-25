@@ -12,6 +12,9 @@ ELEXON_BASE = "https://data.elexon.co.uk/bmrs/api/v1"
 # Shared async client (reused across requests)
 _client: Optional[httpx.AsyncClient] = None
 
+# In-memory cache for historical data queries
+_cache: dict[str, list[dict]] = {}
+
 
 def get_client() -> httpx.AsyncClient:
     global _client
@@ -32,6 +35,11 @@ async def fetch_actuals_wind(
     Fetch FUELHH wind actuals for a date range.
     Returns raw list of records from Elexon /datasets/FUELHH/stream.
     """
+    cache_key = f"actuals_{date_from}_{date_to}"
+    if cache_key in _cache:
+        logger.info(f"Returning cached FUELHH actuals for {cache_key}")
+        return _cache[cache_key]
+
     client = get_client()
     params = {
         "settlementDateFrom": date_from.isoformat(),
@@ -44,6 +52,7 @@ async def fetch_actuals_wind(
         resp.raise_for_status()
         data = resp.json()
         logger.info(f"FUELHH returned {len(data)} records")
+        _cache[cache_key] = data
         return data
     except httpx.HTTPStatusError as e:
         logger.error(f"FUELHH HTTP error: {e.response.status_code} - {e.response.text}")
@@ -61,6 +70,11 @@ async def fetch_forecasts_wind(
     Fetch WINDFOR wind forecasts published within a time window.
     Returns raw list of records from Elexon /datasets/WINDFOR/stream.
     """
+    cache_key = f"forecasts_{publish_from.isoformat()}_{publish_to.isoformat()}"
+    if cache_key in _cache:
+        logger.info(f"Returning cached WINDFOR forecasts for {cache_key}")
+        return _cache[cache_key]
+
     client = get_client()
     params = {
         "publishDateTimeFrom": publish_from.strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -72,6 +86,7 @@ async def fetch_forecasts_wind(
         resp.raise_for_status()
         data = resp.json()
         logger.info(f"WINDFOR returned {len(data)} records")
+        _cache[cache_key] = data
         return data
     except httpx.HTTPStatusError as e:
         logger.error(f"WINDFOR HTTP error: {e.response.status_code} - {e.response.text}")

@@ -17,8 +17,9 @@ app = FastAPI(
         "plus forecast accuracy analytics for January 2026."
     ),
     version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
 )
 
 # CORS — allow Vercel frontend + local development
@@ -40,16 +41,18 @@ app.include_router(forecasts.router, prefix="/api/v1")
 app.include_router(analytics.router, prefix="/api/v1")
 
 
+@app.get("/api")
 @app.get("/")
 async def root():
     return {
         "service": "WindView API",
         "version": "1.0.0",
         "description": "UK Wind Power Procurement Intelligence — Elexon BMRS data",
-        "docs": "/docs",
+        "docs": "/api/docs",
     }
 
 
+@app.get("/api/health")
 @app.get("/health")
 async def health():
     return {"status": "ok", "service": "windview-api"}

@@ -2,8 +2,8 @@
 
 > A web app for UK energy utility traders to monitor and evaluate national GB wind generation forecasts, supporting day-ahead market procurement decisions.
 
-**Live App:** [https://windview.vercel.app](https://windview.vercel.app) *(replace with actual deployed URL)*  
-**API Docs:** [https://windview-api.railway.app/docs](https://windview-api.railway.app/docs) *(replace with actual URL)*
+**Live App:** `https://kjhwr.vercel.app` *(or your assigned Vercel URL)*  
+**API Docs:** `https://kjhwr.vercel.app/api/docs`
 
 > ⚠️ **AI Assistance Disclosure:** This application was built with the assistance of Google Deepmind's Antigravity AI coding assistant. All domain knowledge, architectural decisions, and code have been reviewed and are correct. Prompts covered architecture design, component scaffolding, and API client structure.
 
@@ -23,6 +23,12 @@ A UK energy utility's trading team needs to procure electricity from the GB day-
 
 ```
 windview/
+├── api/
+│   └── index.py              ← Vercel serverless FastAPI entrypoint
+├── vercel.json               ← Unified full-stack Vercel deployment config
+├── requirements.txt          ← Root Python dependencies for Vercel
+├── docker-compose.yml        ← Runs both services locally via Docker
+│
 ├── backend/                  ← FastAPI Python backend
 │   ├── app/
 │   │   ├── main.py           ← FastAPI app, CORS, router registration
@@ -31,7 +37,7 @@ windview/
 │   │   │   ├── forecasts.py  ← /api/v1/forecasts/wind (WINDFOR)
 │   │   │   └── analytics.py  ← /api/v1/analytics/accuracy
 │   │   ├── services/
-│   │   │   ├── elexon.py     ← Async Elexon BMRS API client (httpx)
+│   │   │   ├── elexon.py     ← Async Elexon BMRS API client (httpx) + caching
 │   │   │   └── analytics.py  ← MAE, RMSE, MAPE, Bias computation
 │   │   └── models/
 │   │       └── schemas.py    ← Pydantic response schemas
@@ -52,7 +58,7 @@ windview/
 │   │   │   ├── ForecastHorizonChart.tsx ← Error vs lead time bars
 │   │   │   └── DaySelector.tsx         ← Date navigation control
 │   │   ├── api/
-│   │   │   └── client.ts      ← Axios API calls
+│   │   │   └── client.ts      ← Axios API calls (same-origin on Vercel)
 │   │   ├── utils/
 │   │   │   └── metrics.ts     ← Client-side error metric computation
 │   │   └── types/
@@ -61,8 +67,6 @@ windview/
 │   ├── Dockerfile
 │   ├── vite.config.ts
 │   └── package.json
-│
-├── docker-compose.yml        ← Runs both services locally
 └── README.md
 ```
 
@@ -141,44 +145,32 @@ npm run dev                     # http://localhost:5173
 ## Architecture
 
 ```
-Browser (React SPA)
-     ↕ HTTPS (Axios)
-FastAPI Backend (Railway)
-     ↕ HTTPS (httpx)
+Browser (React SPA on Vercel)
+     ↕ HTTPS (/api/v1/* same-origin)
+FastAPI Serverless Function (Vercel Python Runtime)
+     ↕ HTTPS (httpx async + in-memory caching)
 Elexon BMRS API (public)
   - /datasets/FUELHH/stream
   - /datasets/WINDFOR/stream
 ```
 
 **Key design decisions:**
-- Backend acts as a **thin proxy + analytics layer** — no database, stateless
-- All Elexon API calls are **async** (httpx) with 60s timeout for large data fetches
-- CORS configured to allow Vercel frontend origin
-- Frontend computes per-day metrics client-side for immediate interactivity on the dashboard page; month-level analytics are computed server-side
+- **Single unified deployment on Vercel**: Both React frontend and FastAPI backend run under the same `*.vercel.app` domain via `vercel.json` rewrites. Zero CORS issues and zero cost.
+- **In-memory cache**: Elexon stream responses are cached in memory for sub-second repeat analytics lookups.
+- **Async client**: All upstream Elexon API calls use `httpx.AsyncClient` with 60s timeout.
+- **Resolution alignment**: FUELHH 30-min actuals are aggregated to hourly values before computing error metrics against hourly WINDFOR forecasts.
 
 ---
 
-## Error Metrics Definitions
+## Deployment (100% Vercel)
 
-| Metric | Formula | Unit | Interpretation |
-|--------|---------|------|----------------|
-| **MAE** | mean \|forecast − actual\| | MW | Average error magnitude |
-| **RMSE** | √(mean (forecast − actual)²) | MW | Penalises large errors more |
-| **MAPE** | mean \|error/actual\| × 100 | % | Relative accuracy |
-| **Bias** | mean(forecast − actual) | MW | +ve = over-forecast (less thermal needed than thought) |
+The entire full-stack app deploys to Vercel in 1 click:
 
-**Day-ahead context:** The relevant forecast lead time is 24–36h (D−1 runs for D delivery). The accuracy at this horizon directly informs how much procurement buffer the trading team should maintain.
-
----
-
-## Deployment
-
-| Service | Platform | Notes |
-|---------|----------|-------|
-| Backend | Railway.app | Docker container, port 8000 |
-| Frontend | Vercel | Static Vite build, SPA routing |
-
-Set `VITE_API_BASE_URL=https://your-backend.railway.app` in Vercel environment variables.
+1. Import your GitHub repository (`https://github.com/Dheerajkumar129/kjhwr`) into Vercel.
+2. Vercel automatically detects `vercel.json` and configures:
+   - Frontend static build from `frontend/`
+   - Python serverless functions from `api/index.py` using `requirements.txt`
+3. Click **Deploy**. Both the web portal and the API are live at `https://<your-project>.vercel.app`.
 
 ---
 
